@@ -1,0 +1,2 @@
+- [ADR-0002 Bootstrap Status](project_adr0002_bootstrap.md) — bucket tf-state-workshop-cicd-aws-407295215751-dev created, stacks 00+01 migrated to S3
+- [S3 Inline Attributes Deprecated](feedback_s3_inline_attributes_deprecated.md) — use standalone resources in provider v6; bucket_key_enabled is at rule level not inside apply_server_side_encryption_by_default
