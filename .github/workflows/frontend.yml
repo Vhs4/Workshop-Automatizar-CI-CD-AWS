@@ -1,0 +1,115 @@
+name: frontend
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "dvn-workshop-apps/frontend/**"
+      - "k8s/youtube-live-app/**"
+      - ".github/workflows/frontend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "dvn-workshop-apps/frontend/**"
+      - "k8s/youtube-live-app/**"
+      - ".github/workflows/frontend.yml"
+
+permissions:
+  id-token: write  # Required for OIDC token generation
+  contents: read
+
+# Only one deploy per ref at a time. cancel-in-progress: false on deploy to
+# avoid cancelling an in-flight rollout (which could leave pods in mixed state).
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Build & Validate (ARM64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Set up QEMU (for linux/arm64 emulation)
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130  # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+
+      - name: Build image (no push — validate Dockerfile only)
+        uses: docker/build-push-action@v6
+        with:
+          context: dvn-workshop-apps/frontend/youtube-live-app
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+  deploy:
+    name: Deploy to EKS
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+      ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      ECR_REPO: youtube-live-app
+      DEPLOYMENT: youtube-live-app
+      NAMESPACE: youtube-live
+      CLUSTER: dvn-workshop-production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Set up QEMU (for linux/arm64 emulation)
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130  # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a  # v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@fa648b43de3d4d023bcb3f89ed6940096949c419  # v2
+
+      - name: Compute SHORT_SHA
+        id: sha
+        run: echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image (linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: dvn-workshop-apps/frontend/youtube-live-app
+          platforms: linux/arm64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ steps.sha.outputs.short_sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER"
+
+      - name: Verify deployment exists
+        run: kubectl get deployment "$DEPLOYMENT" -n "$NAMESPACE"
+
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/"$DEPLOYMENT" \
+            app="${ECR_REGISTRY}/${ECR_REPO}:${{ steps.sha.outputs.short_sha }}" \
+            -n "$NAMESPACE"
+
+      - name: Wait for rollout to complete
+        run: kubectl rollout status deployment/"$DEPLOYMENT" -n "$NAMESPACE" --timeout=3m
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Rollout failed — triggering rollback"
+          kubectl rollout undo deployment/"$DEPLOYMENT" -n "$NAMESPACE"
+          exit 1
