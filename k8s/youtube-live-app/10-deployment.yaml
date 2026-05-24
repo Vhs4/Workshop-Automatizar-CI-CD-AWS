@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: youtube-live-app
+  namespace: youtube-live
+  labels:
+    app.kubernetes.io/name: youtube-live-app
+    app.kubernetes.io/instance: youtube-live-app-prod
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: youtube-live-platform
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: youtube-live-app
+      app.kubernetes.io/instance: youtube-live-app-prod
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: youtube-live-app
+        app.kubernetes.io/instance: youtube-live-app-prod
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: youtube-live-platform
+        app.kubernetes.io/managed-by: kubectl
+    spec:
+      terminationGracePeriodSeconds: 30
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: youtube-live-app
+              app.kubernetes.io/instance: youtube-live-app-prod
+              app.kubernetes.io/component: web
+      containers:
+        - name: app
+          image: 407295215751.dkr.ecr.us-east-1.amazonaws.com/youtube-live-app:v1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: NEXT_TELEMETRY_DISABLED
+              value: "1"
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: 0.0.0.0
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          # NOTE: same readiness/liveness path (/api/health); see backend
+          # deployment for the rationale and the difference between strict
+          # readiness vs lenient liveness.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: next-cache
+              mountPath: /app/.next/cache
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: next-cache
+          emptyDir: {}

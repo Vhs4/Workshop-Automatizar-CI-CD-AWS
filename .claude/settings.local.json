@@ -1,20 +1,27 @@
 {
   "permissions": {
     "allow": [
-      "mcp__aws-mcp__aws___call_aws",
-      "mcp__terraform__get_latest_provider_version",
-      "mcp__aws-mcp__aws___search_documentation",
-      "mcp__aws-mcp__aws___read_documentation",
-      "mcp__aws-mcp__aws___retrieve_skill",
-      "mcp__terraform__search_modules",
-      "mcp__terraform__search_providers",
-      "Bash(terraform init:*)",
-      "Bash(terraform validate:*)",
-      "Bash(terraform fmt:*)"
+      "Bash(brew list *)",
+      "Bash(brew search *)",
+      "Read(//usr/local/share/**)",
+      "Read(//opt/homebrew/Cellar/**)",
+      "Bash(npx next *)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(curl -s -o /tmp/frontend-home.html -w \"HTTP %{http_code}  size=%{size_download}  time=%{time_total}s\\\\n\" http://localhost:3000/)",
+      "Bash(docker stop *)",
+      "Bash(docker rm *)",
+      "Bash(mkdir -p \"/Volumes/PortableSSD/Study/Workshop Automatizar CI-CD AWS/dvn-workshop-apps/backend/YoutubeLiveApp/.claude/skills/run-youtubeliveapp\")",
+      "Bash(mkdir -p \"/Volumes/PortableSSD/Study/Workshop Automatizar CI-CD AWS/dvn-workshop-apps/frontend/youtube-live-app/.claude/skills/run-youtube-live-app\")",
+      "Bash(chmod +x \"/Volumes/PortableSSD/Study/Workshop Automatizar CI-CD AWS/dvn-workshop-apps/backend/YoutubeLiveApp/.claude/skills/run-youtubeliveapp/driver.sh\")",
+      "Bash(\"/Volumes/PortableSSD/Study/Workshop Automatizar CI-CD AWS/dvn-workshop-apps/backend/YoutubeLiveApp/.claude/skills/run-youtubeliveapp/driver.sh\" smoke)",
+      "Bash(docker version *)",
+      "Bash(aws --version)",
+      "Bash(aws sts *)"
     ]
   },
   "enabledMcpjsonServers": [
     "terraform",
-    "aws-mcp"
+    "aws-mcp",
+    "awslabs.eks-mcp-server"
   ]
 }

@@ -1,0 +1,18 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: youtube-live-app
+  namespace: youtube-live
+  labels:
+    app.kubernetes.io/name: youtube-live-app
+    app.kubernetes.io/instance: youtube-live-app-prod
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: youtube-live-platform
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: youtube-live-app
+      app.kubernetes.io/instance: youtube-live-app-prod
+      app.kubernetes.io/component: web

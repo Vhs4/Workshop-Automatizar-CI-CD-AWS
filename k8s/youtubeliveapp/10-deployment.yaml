@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: youtubeliveapp
+  namespace: youtube-live
+  labels:
+    app.kubernetes.io/name: youtubeliveapp
+    app.kubernetes.io/instance: youtubeliveapp-prod
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: youtube-live-platform
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: youtubeliveapp
+      app.kubernetes.io/instance: youtubeliveapp-prod
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: youtubeliveapp
+        app.kubernetes.io/instance: youtubeliveapp-prod
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: youtube-live-platform
+        app.kubernetes.io/managed-by: kubectl
+    spec:
+      terminationGracePeriodSeconds: 30
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: youtubeliveapp
+              app.kubernetes.io/instance: youtubeliveapp-prod
+              app.kubernetes.io/component: api
+      containers:
+        - name: app
+          image: 407295215751.dkr.ecr.us-east-1.amazonaws.com/youtubeliveapp:v1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://+:8080
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: DOTNET_RUNNING_IN_CONTAINER
+              value: "true"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          # NOTE: app exposes a single /backend/health endpoint, so readiness
+          # and liveness use the same path. They differ in semantics via the
+          # probe config: readiness is strict (5s start, 10s period, fast fail);
+          # liveness is lenient (30s start, 20s period) so a transient blip
+          # doesn't restart pods.
+          readinessProbe:
+            httpGet:
+              path: /backend/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /backend/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+      volumes:
+        - name: tmp
+          emptyDir: {}

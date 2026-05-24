@@ -1,0 +1,27 @@
+# Frontend is internet-facing: type=LoadBalancer creates a Classic ELB by default
+# on EKS without the AWS Load Balancer Controller installed. Migrate to NLB or
+# ALB (via Ingress) once the controller is deployed.
+apiVersion: v1
+kind: Service
+metadata:
+  name: youtube-live-app
+  namespace: youtube-live
+  labels:
+    app.kubernetes.io/name: youtube-live-app
+    app.kubernetes.io/instance: youtube-live-app-prod
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: youtube-live-platform
+    app.kubernetes.io/managed-by: kubectl
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: youtube-live-app
+    app.kubernetes.io/instance: youtube-live-app-prod
+    app.kubernetes.io/component: web
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
