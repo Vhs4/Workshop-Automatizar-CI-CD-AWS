@@ -2,3 +2,6 @@
 - [ADR-0002 Remote Backend Stack](project_remote_backend.md) — S3 bucket for Terraform state; use_lockfile=true; no DynamoDB; state is local by design
 - [Terraform Naming Conventions](feedback_naming_conventions.md) — mandatory file/resource/variable/output naming rules for all stacks in this project
 - [ADR-0003 EKS Stack](project_eks_stack.md) — EKS cluster in 02-eks-stack-ai/; outputs and backend key for downstream stacks
+- [ADR-0004 CI/CD Stack](project_cicd_stack.md) — GitHub Actions OIDC + IAM roles in 03-cicd-stack-ai/; ARNs generated; GitHub vars pending gh auth login
+- [EKS Access Policy ARN partition](feedback_amazon_eks_policy_arn_partition.md) — use literal 'aws' partition string for AmazonEKSEditPolicy ARN, not data.aws_partition
+- [S3 Backend Bucket Name](feedback_s3_backend_bucket_name.md) — bucket name has account ID suffix; always read from existing stack versions.tf

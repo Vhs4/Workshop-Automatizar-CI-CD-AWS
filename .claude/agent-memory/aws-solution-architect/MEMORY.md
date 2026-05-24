@@ -1,0 +1,1 @@
+- [ADR-0004 CI/CD GitHub Actions OIDC](project_adr0004_cicd.md) - Push model com kubectl set image, nova stack 03-cicd-stack-ai; decisoes-chave (push, main trigger, SHA tag) alinhadas com humano antes

@@ -16,7 +16,12 @@
       "Bash(\"/Volumes/PortableSSD/Study/Workshop Automatizar CI-CD AWS/dvn-workshop-apps/backend/YoutubeLiveApp/.claude/skills/run-youtubeliveapp/driver.sh\" smoke)",
       "Bash(docker version *)",
       "Bash(aws --version)",
-      "Bash(aws sts *)"
+      "Bash(aws sts *)",
+      "mcp__aws-mcp__aws___search_documentation",
+      "mcp__aws-mcp__aws___read_documentation",
+      "mcp__terraform__get_provider_details",
+      "Bash(terraform plan *)",
+      "Bash(aws iam get-role *)"
     ]
   },
   "enabledMcpjsonServers": [
